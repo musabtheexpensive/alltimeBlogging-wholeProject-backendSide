@@ -1,16 +1,21 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-// const jwt = require("jsonwebtoken");
-// const cookieParser = require("cookie-parser");
-// const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uak4fm8.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -23,6 +28,31 @@ const client = new MongoClient(uri, {
   },
 });
 
+// my middlewares
+const logger = (req, res, next) => {
+  console.log("log: info", req.host, req.originalUrl);
+  next();
+};
+
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log("value of token in middleware", token);
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    // error
+    if (err) {
+      console.log(err);
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    // if token is valid then it would be decoded
+    console.log("value in the token", decoded);
+    req.user = decoded;
+    next();
+  });
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -31,8 +61,25 @@ async function run() {
     const blogCollection = client.db("allBlogs").collection("blogByUser");
     const wishlistCollection = client.db("allBlogs").collection("wishlist");
 
+    // Auth Related Api Start Here
+    app.post("/jwt", logger, async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res
+        // // token set code here
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false, // http://localhost:5173/login
+          // sameSite: "none",
+        })
+        .send({ success: true });
+    });
+
     //backend create operation
-    app.post("/blogByUser", async (req, res) => {
+    app.post("/blogByUser", logger, async (req, res) => {
       const newBlog = req.body;
       console.log(newBlog);
       const result = await blogCollection.insertOne(newBlog);
@@ -58,8 +105,8 @@ async function run() {
           category: 1,
           photo: 1,
           longDes: 1,
-          name:1,
-          _id:1,
+          name: 1,
+          _id: 1,
         },
       };
 
@@ -76,7 +123,9 @@ async function run() {
     });
 
     // wishlist all by specific user read and
-    app.get("/wishlist", async (req, res) => {
+    app.get("/wishlist", logger, verifyToken, async (req, res) => {
+      // console.log("The Token IS=", req.cookies.token);
+      console.log("user in the valid token",req.user);
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
