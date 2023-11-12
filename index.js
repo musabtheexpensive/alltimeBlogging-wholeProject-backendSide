@@ -52,14 +52,20 @@ async function run() {
       const query = { _id: new ObjectId(id) };
 
       const options = {
-        projection: { title: 1, shortDes: 1, category: 1, photo: 1 },
+        projection: {
+          title: 1,
+          shortDes: 1,
+          category: 1,
+          photo: 1,
+          longDes: 1,
+          name:1,
+          _id:1,
+        },
       };
 
       const result = await blogCollection.findOne(query, options);
       res.send(result);
     });
-
-
 
     // // // // // // backend specific wishlist collection start here
     app.post("/wishlist", async (req, res) => {
@@ -69,8 +75,8 @@ async function run() {
       res.send(result);
     });
 
-    // wishlist all by specific user read and 
-    app.get("/wishlist",  async (req, res) => {
+    // wishlist all by specific user read and
+    app.get("/wishlist", async (req, res) => {
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
@@ -79,7 +85,14 @@ async function run() {
       res.send(result);
     });
 
-    
+    // specific wishlist delete in my Wishlist section
+    app.delete("/wishlist/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await wishlistCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
