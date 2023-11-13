@@ -10,7 +10,12 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin:
+     [
+      "http://localhost:5173",
+      'https://assignment11-blog-website.web.app',
+      'https://assignment11-blog-website.firebaseapp.com'
+    ],
     credentials: true,
   })
 );
@@ -78,6 +83,14 @@ async function run() {
         .send({ success: true });
     });
 
+     // when user logout then remove token. this code start here
+     app.post("/logout", async (req, res) => {
+      const user = req.body;
+      console.log("logging out", user);
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+    });
+
+
     //backend create operation
     app.post("/blogByUser", logger, async (req, res) => {
       const newBlog = req.body;
@@ -126,6 +139,9 @@ async function run() {
     app.get("/wishlist", logger, verifyToken, async (req, res) => {
       // console.log("The Token IS=", req.cookies.token);
       console.log("user in the valid token",req.user);
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
