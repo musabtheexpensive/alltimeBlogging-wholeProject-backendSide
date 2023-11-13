@@ -10,13 +10,12 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin:
-     [
+    origin: [
       "http://localhost:5173",
-      'https://assignment11-blog-website.web.app',
-      'https://assignment11-blog-website.firebaseapp.com'
+      "http://localhost:5174",
+      "https://assignment11-blog-website.web.app",
+      "https://assignment11-blog-website.firebaseapp.com",
     ],
-  
   })
 );
 app.use(express.json());
@@ -90,10 +89,9 @@ async function run() {
     //   res.clearCookie("token", { maxAge: 0 }).send({ success: true });
     // });
 
-
     //backend create operation start here
     // ekhane logger use hobe async er aagge
-    app.post("/blogByUser",  async (req, res) => {
+    app.post("/blogByUser", async (req, res) => {
       const newBlog = req.body;
       console.log(newBlog);
       const result = await blogCollection.insertOne(newBlog);
@@ -138,7 +136,7 @@ async function run() {
 
     // wishlist all by specific user read and
     // ekhane async er aagge logger o verify use hobe
-    app.get("/wishlist",  async (req, res) => {
+    app.get("/wishlist", async (req, res) => {
       // console.log("The Token IS=", req.cookies.token);
       // console.log("user in the valid token",req.user);
       // if (req.user.email !== req.query.email) {
